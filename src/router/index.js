@@ -11,5 +11,10 @@ export default new Router({
       name: 'HelloWorld',
       component: HelloWorld,
     },
+    {
+      path: '/create',
+      name: 'CreateCharacter',
+      component: () => import('@/views/createCharacter.vue'),
+    },
   ],
 });
