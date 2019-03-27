@@ -209,6 +209,7 @@ export default {
             &.warrior {
                 background-color: #3d1b1a;
             }
+            overflow: hidden;
             padding: 30px 20px;
             color: #fff;
             font-weight: bold;

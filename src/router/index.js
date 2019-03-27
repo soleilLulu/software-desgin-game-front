@@ -7,14 +7,14 @@ Vue.use(Router);
 export default new Router({
   routes: [
     {
-      path: '/',
-      name: 'HelloWorld',
-      component: HelloWorld,
-    },
-    {
       path: '/create',
       name: 'CreateCharacter',
       component: () => import('@/views/createCharacter.vue'),
+    },
+    {
+      path: '/home',
+      name: 'HOME',
+      component: () => import('@/views/homePage.vue'),
     },
   ],
 });
