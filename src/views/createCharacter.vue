@@ -131,7 +131,7 @@ export default {
               message: `您选择的职业是${characterType}`,
               type: 'is-warning'
           })
-      }
+      },
   },
 };
 </script>

@@ -53,7 +53,26 @@
         <div class="empty"></div>
     </div>
     <div class="bottom-container">
-
+        <div class="player-life">
+            <progress class="progress is-danger" style="height:25px;" :value="currentLife" :max="totalLife"></progress>   
+        </div>
+        <div class="detail-content">
+            <div class="equipment">
+                <div class="weapon">
+                </div>
+                <div class="weapon"></div>
+                <div class="weapon"></div>
+            </div>
+            <div class="content-box">
+            </div>
+            <div class="skill-content">
+            </div>
+            <div class="keyboard-info">
+                <div class="key">J</div>
+                <div class="key">K</div>
+                <div class="key">L</div>
+            </div>
+        </div>
     </div>
 </div> 
 </template>
@@ -63,6 +82,52 @@ export default {
         return{
             currentLife: 180,
             totalLife: 200,
+            websocket: null,
+        }
+    },
+    mounted(){
+        let websocket = null;
+        if('WebSocket' in window){
+            websocket = new WebSocket("ws://120.77.205.70:8066/websocket");
+        }
+        else{
+            this.$toast.open({
+                message: '不支持WebSocket',
+                type: 'is-danger',
+            })
+        }
+        //连接发生错误的回调方法
+        websocket.onerror = function(){
+            this.$toast.open({
+                message: 'WebSocket链接错误',
+                type: 'is-danger'
+            })
+        };
+        //连接成功建立的回调方法
+        websocket.onopen = function(event){
+            console.log('WebSocket连接已建立');
+        }
+        //接收到消息的回调方法
+        websocket.onmessage = function(event){
+            console.log(event.data);
+        }
+        //连接关闭的回调方法
+        websocket.onclose = function(){
+            console.log('websocket连接已关闭');
+        }
+        this.websocket = websocket;
+        //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+        window.onbeforeunload = function(){
+            websocket.close();
+        }
+        // setInterval(this.send,1000)
+    },
+    methods: {
+        send(){
+            // this.websocket.send('test');
+            // console.log('send');
+            // var message = document.getElementById('text').value;
+            // websocket.send(message);
         }
     }
 }
@@ -148,7 +213,7 @@ export default {
         }
     }
     .center-conatiner {
-        flex: 7;
+        flex: 6;
         display: flex;
         .select-list {
             flex: 1;
@@ -222,7 +287,63 @@ export default {
     }
     .bottom-container {
         flex: 4;
+        display: flex;
+        flex-direction: column;
         background-color: #2f2d2c;
+        .player-life {
+            display: flex;
+            padding: 0px 60px;
+            margin-top: 30px;
+            // width: 80%; 
+        }
+    }
+    .detail-content {
+        display: flex;
+        margin-top: 10px;
+        padding: 0px 60px;
+        .equipment {
+            margin-right: 20px;
+            .weapon {
+                height: 60px;
+                width: 60px;
+                margin-top: 10px;
+                background: #ffffff;
+                border-radius: 5px;
+                border: 3px solid orange;
+            }
+        }
+        .content-box {
+            background-color: rgba(67, 49, 39, 1);
+            border-radius: 20px;
+            border:2px solid white;
+            flex: 4;
+            margin-right: 20px;
+            overflow: scroll;
+        }
+        .skill-content {
+            flex: 5;
+            background-color: rgba(135, 84, 45, 1);
+            border:2px solid white;
+            border-radius: 20px;
+            margin-right: 20px;
+        }
+        .keyboard-info {
+            // flex: 1;
+            float: right;
+            .key {
+                height: 60px;
+                width: 60px;
+                margin-top: 10px;
+                background: rgba(198, 157, 120, 1);
+                border-radius: 5px;
+                border: 3px solid white;     
+                font-size: 30px;
+                line-height: 60px;
+                text-align: center;
+                font-weight: bold; 
+                color: #ffffff;        
+            }
+        }
     }
 }
 </style>
