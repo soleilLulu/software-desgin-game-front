@@ -6,9 +6,9 @@
       </div>
       <div class="description-container">
           <div class="character-image">
-              <img v-if="currentType == 'assassin'" src="../assets/assassin.png" />
-              <img v-if="currentType == 'pastor'" src="../assets/pastor.png" />
-              <img v-if="currentType == 'warrior'" src="../assets/warrior.png" />
+              <img v-if="currentType == 'ASSASSIN'" src="../assets/assassin.png" />
+              <img v-if="currentType == 'DOCTOR'" src="../assets/pastor.png" />
+              <img v-if="currentType == 'SOLDIER'" src="../assets/warrior.png" />
           </div>
           <div :class="['character-content',currentType]">
               <div class="occupation">
@@ -50,19 +50,20 @@
       </div>
       <div class="create-footer">
         <div class="picture">
-            <img style="border:2px solid #1c0e24;" src="../assets/assassin-min.png" @mouseenter="enter('assassin')" @click="confirmSelect('assassin')"/>
+            <img style="border:2px solid #1c0e24;" src="../assets/assassin-min.png" @mouseenter="enter('ASSASSIN')" @click="confirmSelect('ASSASSIN')"/>
         </div>
         <div class="picture">
-            <img style="border:2px solid #fcee60" src="../assets/pastor-min.png" @mouseenter="enter('pastor')" @click="confirmSelect('pastor')" />
+            <img style="border:2px solid #fcee60" src="../assets/pastor-min.png" @mouseenter="enter('DOCTOR')" @click="confirmSelect('DOCTOR')" />
         </div>
         <div class="picture">
-            <img style="border:2px solid #740003" src="../assets/warrior-min.png" @mouseenter="enter('warrior')" @click="confirmSelect('warrior')" />
+            <img style="border:2px solid #740003" src="../assets/warrior-min.png" @mouseenter="enter('SOLDIER')" @click="confirmSelect('SOLDIER')" />
         </div>
       </div>
   </div>
 </template>
 
 <script>
+import { characterCreate } from "@/api/game.js";
 const assassinInfo = {
     name: '刺客',
     description: '对于刺客来说，任何花哨的技巧都比不上效率来的重要，她们总是出其不意的接近目标，给予致命一击，然后消失的无影无踪。',
@@ -104,7 +105,7 @@ export default {
   data() {
     return {
       name: '',
-      currentType: 'assassin',
+      currentType: 'ASSASSIN',
       currentInfo: assassinInfo,
     };
   },
@@ -112,25 +113,39 @@ export default {
       enter(type){
           if(type == this.currentType)return;
           switch(type){
-            case 'assassin':
-                this.currentType = 'assassin';
+            case 'ASSASSIN':
+                this.currentType = 'ASSASSIN';
                 this.currentInfo = assassinInfo;
                 break;
-            case 'pastor':
-                this.currentType = 'pastor';
+            case 'DOCTOR':
+                this.currentType = 'DOCTOR';
                 this.currentInfo = pastorInfo;
                 break;
-            case 'warrior':
-                this.currentType = 'warrior';
+            case 'SOLDIER':
+                this.currentType = 'SOLDIER';
                 this.currentInfo = warriorInfo;
                 break;
           }
       },
       confirmSelect(characterType){
-          this.$toast.open({
-              message: `您选择的职业是${characterType}`,
-              type: 'is-warning'
-          })
+          let self = this;
+          // DOCTOR,SOLDIER,ASSASSIN
+          characterCreate(this.name,this.currentType).then((res) => {
+            //   console.log(res);
+              this.$router.push({
+                  name:'HOME',
+                  query:{
+                      userId: self.name,
+                      humanModel:res.data.humanModel,
+                      stateInfoVO: res.data.stateInfoVO,
+                    }
+                });
+          }).catch((e) => {
+              this.$toast.open({
+                  message: e.message || '服务器错误',
+                  type: 'is-danger'
+              })
+          });
       },
   },
 };

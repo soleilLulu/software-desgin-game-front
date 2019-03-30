@@ -1,0 +1,1 @@
+export const API_PREFIX = 'http://120.77.205.70:8066';

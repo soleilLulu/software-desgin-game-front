@@ -1,25 +1,27 @@
 <template> 
 <div class="home-container">
+    <img :class="['background-image',{'animation': isMoving}]" src="../assets/home-background.jpg">
+    <img :class="['background-image-2',{'animation': isMoving}]" src="../assets/home-background.jpg">
     <div class="header-container">
         <div class="occupation-tag">
             刺
         </div>
         <div class="name">
-            我是主角
+            {{userId}}
         </div>
         <div class="level-rank">
-            LV.8
+            LV.{{humanModel.level}}
         </div>
         <div class="life">
             <label class="life-num">
-                {{`${currentLife} / ${totalLife}`}}
+                {{`${humanModel.curLevelExp} / ${totalLife}`}}
             </label>
             <span>经验值</span>
-            <progress class="progress is-success" :value="currentLife" :max="totalLife"></progress>
+            <progress class="progress is-success" :value="humanModel.curLevelExp" :max="totalLife"></progress>
         </div>
         <div class="money">
             <img src="../assets/coin.png" />
-            2173
+            {{humanModel.money}}
         </div>
     </div>
     <div class="center-conatiner">
@@ -35,26 +37,31 @@
             </div>          
         </div>
         <div class="fighting">
-            <div class="monster-life">
-                <label class="life-num">
-                    {{`${currentLife} / ${totalLife}`}}
+            <div class="monster-life" >
+                <label class="life-num" v-show="monsterModel.HP">
+                    {{`${monsterModel.HP} / ${monsterModel.maxHP}`}}
                 </label>
-                <progress class="progress is-warning" :value="currentLife" :max="totalLife"></progress>     
+                <progress v-show="monsterModel.HP" class="progress is-warning" :value="currentLife" :max="monsterModel.maxHP"></progress>     
             </div>
             <div class="fighters">
                 <div class="player">
                     <img class="player-pic" src="../assets/assassin-fix.png" />
                 </div>
                 <div class="monster">
-                    <img src="../assets/monster.png" />
+                    <img v-if="monsterModel.HP" src="../assets/monster.png" />
                 </div>
             </div>
         </div>
-        <div class="empty"></div>
+        <div class="empty">
+            <div class="button-group">
+                <a class="button is-info" @click="beginMoving">开始探索</a>
+                <a class="button is-info" @click="stopMoving">关闭webSocket连接</a>
+            </div>
+        </div>
     </div>
     <div class="bottom-container">
         <div class="player-life">
-            <progress class="progress is-danger" style="height:25px;" :value="currentLife" :max="totalLife"></progress>   
+            <progress class="progress is-danger" style="height:25px;" :value="humanModel.hp" :max="humanModel.maxHP"></progress>   
         </div>
         <div class="detail-content">
             <div class="equipment">
@@ -64,31 +71,84 @@
                 <div class="weapon"></div>
             </div>
             <div class="content-box">
+                <div class="content-line">
+                    生命: {{humanModel.hp}} / {{humanModel.maxHP}}
+                </div>
+                <div class="content-line">
+                    攻击: {{humanModel.atk}}
+                </div>
+                <div class="content-line">
+                    防御: {{humanModel.def}}
+                </div>
+                <div class="content-line">
+                    力量: {{humanModel.power}}
+                </div>
+                <div class="content-line">
+                    体质: {{humanModel.physique}}
+                </div>    
+                <div class="content-line">
+                    敏捷: {{humanModel.agility}}
+                </div>     
+                <div class="content-line">
+                    精神: {{humanModel.spirit}}
+                </div> 
+                <div class="content-line">
+                    耐力: {{humanModel.endurance}}
+                </div>  
+                <div class="content-line">
+                    幸运: {{humanModel.luck}}
+                </div>      
             </div>
             <div class="skill-content">
             </div>
             <div class="keyboard-info">
-                <div class="key">J</div>
-                <div class="key">K</div>
-                <div class="key">L</div>
+                <div class="key" @click="attack('J')">J</div>
+                <div class="key" @click="attack('K')">K</div>
+                <div class="key" @click="attack('L')">L</div>
             </div>
         </div>
     </div>
 </div> 
 </template>
 <script>
+import { characterMove, characterAttack } from "@/api/game.js"
 export default {
     data(){
         return{
             currentLife: 180,
             totalLife: 200,
             websocket: null,
+            humanModel: {},
+            monsterModel: {},
+            stateInfoVO: {},
+            userId: '',
+            isMoving: false,
+        }
+    },
+    watch: {
+        stateInfoVO(newVal){
+            console.log('监听state值'+newVal);
+            if(newVal.state != 'MOVING'){
+                this.isMoving = false;
+            }else if(this.isMoving == true){
+                console.log('没发现怪物哦');
+                this.$toast.open({
+                    message: '没有怪物哦～～请继续探索',
+                    type: 'is-warning'
+                })
+
+            }
         }
     },
     mounted(){
+        let userId = this.$route.query.userId;
+        this.userId = userId;
+        this.humanModel = this.$route.query.humanModel;
+        this.stateInfoVO = this.$route.query.stateInfoVO;
         let websocket = null;
+        let self = this;
         if('WebSocket' in window){
-            websocket = new WebSocket("ws://120.77.205.70:8066/websocket");
+            websocket = new WebSocket(`ws://120.77.205.70:8066/websocket/${userId}`);
         }
         else{
             this.$toast.open({
@@ -109,7 +169,18 @@ export default {
         }
         //接收到消息的回调方法
         websocket.onmessage = function(event){
-            console.log(event.data);
+            // console.log(event.data);
+            let data = JSON.parse(event.data);
+            // console.log(data);
+            if(data.stateInfoVO){
+                self.stateInfoVO = data.stateInfoVO;
+            }
+            if(data.humanModel){
+                self.humanModel = data.humanModel;
+            }
+            if(data.monsterModel) {
+                self.monsterModel = data.monsterModel;    
+            }
         }
         //连接关闭的回调方法
         websocket.onclose = function(){
@@ -118,17 +189,40 @@ export default {
         this.websocket = websocket;
         //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
         window.onbeforeunload = function(){
-            websocket.close();
+            this.websocket.close();
         }
         // setInterval(this.send,1000)
     },
     methods: {
-        send(){
-            // this.websocket.send('test');
-            // console.log('send');
-            // var message = document.getElementById('text').value;
-            // websocket.send(message);
+        attack(key){
+            characterAttack(key).then((res) => {
+            }).catch((e) => {     
+            })
+        },
+        move(){
+            setTimeout(()=> {
+                characterMove().then((res) => {     
+                }).catch((e) => {
+                    this.$toast.open({
+                        message: '服务器错误'
+                    })
+                })
+            },3000);
+        },
+        beginMoving(){
+            this.isMoving = true;
+            this.move();
+        },
+        stopMoving() {
+            this.isMoving = false;
+            this.websocket.close();
         }
+        // send(){
+        //     // this.websocket.send('test');
+        //     // console.log('send');
+        //     // var message = document.getElementById('text').value;
+        //     // websocket.send(message);
+        // }
     }
 }
 </script>
@@ -141,10 +235,41 @@ export default {
 .home-container {
     height: 100%;
     width: 100%;
-    background-image: url('../assets/home-background.jpg');
+    // background-image: url('../assets/home-background.jpg');
     background-size: cover;
     display: flex;
     flex-direction: column;
+    // animation: frame 5s infinite;
+    .background-image {
+        height: 100vh;
+        width: 100vw;
+        position: absolute;
+        top: 0;
+        right: 0;
+        z-index: 0;
+        &.animation {
+            animation: frame 10s linear infinite;
+            @keyframes frame {
+                from { right: 0;}
+                to {right:100vw;}
+            }
+        }
+    }
+    .background-image-2 {
+        height: 100vh;
+        width: 100vw;
+        position: absolute;
+        top: 0;
+        right: -100vw;
+        z-index: 0;
+        &.animation {
+            animation: frame_2 10s linear infinite;
+            @keyframes frame_2 {
+                from { right: -100vw;}
+                to {right:0vw;}
+            }
+        }
+    }
     .header-container {
         height: 70px;
         display: flex;
@@ -174,11 +299,6 @@ export default {
             font-size: 20px;
             .tag-back;
         }
-        // .level {
-        //     margin-left: 30px;
-        //     font-size: 1.2rem;
-        //     .tag-back;
-        // }
         .money {
             margin-left: 30px;
             font-size: 20px;
@@ -258,6 +378,8 @@ export default {
                 display: flex;
                 justify-content: space-between;
                 .player{
+                    flex: 3;
+                    z-index: 99;
                     .player-pic {
                         height: 330px;
                         width: 450px;
@@ -265,6 +387,7 @@ export default {
                     }
                 }
                 .monster {
+                    flex: 1;
                     display: flex;
                     flex-direction: column-reverse;
                     position: relative;
@@ -283,9 +406,16 @@ export default {
         }
         .empty {
             flex: 1;
+            position: relative;
+            .button-group {
+                position: absolute;
+                bottom: 20px;
+                right: 30px;
+            }
         }
     }
     .bottom-container {
+        z-index: 99;
         flex: 4;
         display: flex;
         flex-direction: column;
@@ -319,6 +449,11 @@ export default {
             flex: 4;
             margin-right: 20px;
             overflow: scroll;
+            padding: 10px 10px;
+            .content-line {
+                color: white;
+                font-size: bold;
+            }
         }
         .skill-content {
             flex: 5;
@@ -341,7 +476,10 @@ export default {
                 line-height: 60px;
                 text-align: center;
                 font-weight: bold; 
-                color: #ffffff;        
+                color: #ffffff; 
+                &:hover {
+                    font-size: 38px;
+                }
             }
         }
     }
