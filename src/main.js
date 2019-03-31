@@ -5,10 +5,11 @@ import Vue from 'vue';
 import App from './App';
 import router from './router';
 import Buefy from 'buefy';
+import axios from 'axios'
 
+axios.defaults.withCredentials = true
 Vue.config.productionTip = false;
 Vue.use(Buefy);
-
 /* eslint-disable no-new */
 new Vue({
   el: '#app',

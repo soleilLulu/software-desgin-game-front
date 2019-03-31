@@ -59,6 +59,7 @@
             <img style="border:2px solid #740003" src="../assets/warrior-min.png" @mouseenter="enter('SOLDIER')" @click="confirmSelect('SOLDIER')" />
         </div>
       </div>
+      <b-loading :is-full-page="true" :active.sync="isLoading" :can-cancel="true"></b-loading>
   </div>
 </template>
 
@@ -107,6 +108,7 @@ export default {
       name: '',
       currentType: 'ASSASSIN',
       currentInfo: assassinInfo,
+      isLoading: false,
     };
   },
   methods: {
@@ -130,8 +132,10 @@ export default {
       confirmSelect(characterType){
           let self = this;
           // DOCTOR,SOLDIER,ASSASSIN
+          this.isLoading = true;
           characterCreate(this.name,this.currentType).then((res) => {
             //   console.log(res);
+            this.isLoading = false;
               this.$router.push({
                   name:'HOME',
                   query:{
@@ -141,6 +145,7 @@ export default {
                     }
                 });
           }).catch((e) => {
+              this.isLoading = false;
               this.$toast.open({
                   message: e.message || '服务器错误',
                   type: 'is-danger'

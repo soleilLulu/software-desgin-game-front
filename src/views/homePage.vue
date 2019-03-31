@@ -4,7 +4,7 @@
     <img :class="['background-image-2',{'animation': isMoving}]" src="../assets/home-background.jpg">
     <div class="header-container">
         <div class="occupation-tag">
-            刺
+            {{humanTypeTag}}
         </div>
         <div class="name">
             {{userId}}
@@ -26,35 +26,52 @@
     </div>
     <div class="center-conatiner">
         <div class="select-list">
-            <div class="select-item">
-                技能
+            <div :class="['select-item',{'active':currentTab == 'skill'}]" @click="changeTab('skill')">
+                技能介绍
             </div>
-            <div class="select-item active">
+            <div :class="['select-item',{'active':currentTab == 'object'}]" @click="changeTab('object')">
                 物品
             </div> 
-            <div class="select-item">
+            <!-- <div :class="['select-item',{'active':currentTab == 'set'}]" @click="changeTab('set')">
                 设置
-            </div>          
+            </div>      -->
+            <div :class="['select-item',{'active': currentTab == 'log'}]" @click="changeTab('log')">
+                日志
+            </div>         
         </div>
         <div class="fighting">
             <div class="monster-life" >
-                <label class="life-num" v-show="monsterModel.HP">
-                    {{`${monsterModel.HP} / ${monsterModel.maxHP}`}}
+                <label class="life-num" v-show="monsterModel.hp && monsterModel.hp > 0">
+                    {{`${monsterModel.hp} / ${monsterModel.maxHP}`}}
                 </label>
-                <progress v-show="monsterModel.HP" class="progress is-warning" :value="currentLife" :max="monsterModel.maxHP"></progress>     
+                <progress v-show="monsterModel.hp && monsterModel.hp > 0" class="progress is-warning" :value="monsterModel.hp" :max="monsterModel.maxHP"></progress>     
             </div>
             <div class="fighters">
                 <div class="player">
-                    <img class="player-pic" src="../assets/assassin-fix.png" />
+                    <img class="player-pic" v-if="humanType == 'ASSASSIN'" src="../assets/assassin-fix.png" />
+                    <img class="player-pic" v-if="humanType == 'DOCTOR'" src="../assets/pastor-fix.png" />
+                    <img class="player-pic" v-if="humanType == 'SOLDIER'" src="../assets/warrior-fix.png" />
                 </div>
                 <div class="monster">
-                    <img v-if="monsterModel.HP" src="../assets/monster.png" />
+                    <img v-if="monsterModel.hp && monsterModel.hp > 0" src="../assets/monster.png" />
                 </div>
             </div>
         </div>
         <div class="empty">
+            <div class="keyboard-info">
+                <div class="key" v-for="(item,index) of humanModel.skills" :key="index" @click="attack(item.key)">
+                    {{item.name}}
+                </div>
+                <!-- <div class="key" @click="attack('H')"></div>
+                <div class="key" @click="attack('J')">J</div>
+                <div class="key" @click="attack('K')">K</div>
+                <div class="key" @click="attack('L')">L</div> -->
+            </div>
             <div class="button-group">
-                <a class="button is-info" @click="beginMoving">开始探索</a>
+                <div class="lookaround" v-show="stateInfoVO.state == 'MOVING'" @click="beginMoving" >
+                    探索
+                </div>
+                <!-- <a class="lookaround">开始探索</a> -->
                 <a class="button is-info" @click="stopMoving">关闭webSocket连接</a>
             </div>
         </div>
@@ -66,9 +83,14 @@
         <div class="detail-content">
             <div class="equipment">
                 <div class="weapon">
+                    <img v-if="humanModel.role && humanModel.role.head" :src="humanModel.role.head.url" />
                 </div>
-                <div class="weapon"></div>
-                <div class="weapon"></div>
+                <div class="weapon">
+                    <img v-if="humanModel.role && humanModel.role.weapon" :src="humanModel.role.weapon.url" />
+                </div>
+                <div class="weapon">
+                    <img v-if="humanModel.role && humanModel.role.body" :src="humanModel.role.body.url" />
+                </div>
             </div>
             <div class="content-box">
                 <div class="content-line">
@@ -100,18 +122,47 @@
                 </div>      
             </div>
             <div class="skill-content">
+                <!-- 游戏日志 -->
+                <div v-if="currentTab == 'log'">
+                    <div v-for="(item,index) of logList" :key='index'>
+                        {{item}}
+                    </div>
+                </div>
+                <!-- 物品栏 -->
+                <div class="object-list" v-if="currentTab == 'object'">
+                    <div :class="['object-item',{'opacity': currentObjectType != 'equip'}]" v-for="(item,index) of humanModel.bag" :key="index">
+                        <a @click="handleEquipment(item.uuid)"><img :src="item.url" /></a>
+                    </div>
+                </div>
+                <!-- 技能介绍 -->
+                <div class="skill-list" v-if="currentTab == 'skill'">
+                    <div class="skill-item" v-for="(item,index) of humanModel.skills" :key="index">
+                        <label>{{item.name}}</label><br/>
+                        <span>技能介绍:</span>{{item.description}};
+                        <span>CD回合:</span>{{item.cd}};
+                        <span>当前剩余回合:</span>{{item.remainCd}};
+                    </div>
+                </div>
             </div>
-            <div class="keyboard-info">
+            <div class="equipment-handle" v-if="currentTab == 'object'">
+                <div class="equip strength">
+                    <a class="button is-success" @click="handleEquipmentState('strength')">{{currentObjectType == 'strength'? '取消强化' : '装备强化'}}</a>
+                </div>
+                <div class="equip split">
+                    <a class="button is-danger" @click="handleEquipmentState('split')">{{currentObjectType == 'split'? '取消分解' : '装备分解'}}</a>
+                </div>
+            </div>
+            <!-- <div class="keyboard-info">
                 <div class="key" @click="attack('J')">J</div>
                 <div class="key" @click="attack('K')">K</div>
                 <div class="key" @click="attack('L')">L</div>
-            </div>
+            </div> -->
         </div>
     </div>
 </div> 
 </template>
 <script>
-import { characterMove, characterAttack } from "@/api/game.js"
+import { characterMove, characterAttack, characterEquip, characterSplit, characterStrength } from "@/api/game.js"
 export default {
     data(){
         return{
@@ -123,7 +174,15 @@ export default {
             stateInfoVO: {},
             userId: '',
             isMoving: false,
+            humanTypeTag: '刺',
+            humanType: 'ASSASSIN',
+            playerPic: '../assets/assassin-fix.png',
+            logList: ['人物初始化'],
+            currentTab: 'log',
+            currentObjectType: 'equip',
         }
+    },
+    computed:{
     },
     watch: {
         stateInfoVO(newVal){
@@ -131,12 +190,13 @@ export default {
             if(newVal.state != 'MOVING'){
                 this.isMoving = false;
             }else if(this.isMoving == true){
-                console.log('没发现怪物哦');
                 this.$toast.open({
                     message: '没有怪物哦～～请继续探索',
                     type: 'is-warning'
                 })
-
+            }
+            if(newVal.curLog){
+                this.logList.push(newVal.curLog);
             }
         }
     },
@@ -145,6 +205,22 @@ export default {
         this.userId = userId;
         this.humanModel = this.$route.query.humanModel;
         this.stateInfoVO = this.$route.query.stateInfoVO;
+        // let currentType = '';
+        switch(this.humanModel.humanType){
+            case 'ASSASSIN':
+                this.humanTypeTag = '刺';
+                this.playerPic = '../assets/assassin-fix.png';
+                break;
+            case 'DOCTOR':
+                this.humanTypeTag = '牧';
+                this.playerPic = '../assets/pastor-fix.png';
+                break;
+            case 'SOLDIER':
+                this.humanTypeTag = '狂';
+                this.playerPic = '../assets/warrior-fix.png';
+                break;
+        }
+        this.humanType = this.humanModel.humanType;
         let websocket = null;
         let self = this;
         if('WebSocket' in window){
@@ -158,7 +234,7 @@ export default {
         }
         //连接发生错误的回调方法
         websocket.onerror = function(){
-            this.$toast.open({
+            self.$toast.open({
                 message: 'WebSocket链接错误',
                 type: 'is-danger'
             })
@@ -194,6 +270,90 @@ export default {
         // setInterval(this.send,1000)
     },
     methods: {
+        handleEquipment(uuid){
+            switch(this.currentObjectType){
+                case 'equip':
+                    this.equip(uuid);
+                    break;
+                case 'strength':
+                    this.strength(uuid);
+                    break;
+                case 'split':
+                    this.split(uuid);
+                    break;
+            }
+        },
+        //处理物品状态
+        handleEquipmentState(buttonType){
+            if(buttonType == this.currentObjectType){
+                this.currentObjectType = 'equip';
+            }else {
+                this.currentObjectType = buttonType;
+            }
+        },
+        //分解物品
+        split(uuid){
+            characterSplit(uuid).then((res) => {
+                if(res.data.code != 0){
+                    this.$toast.open({
+                        message: res.data.res,
+                        type: 'is-danger'
+                    })    
+                }else {
+                    this.humanModel = res.data.res;
+                    this.$toast.open({
+                        message: '分解成功',
+                        type: 'is-success'
+                    })
+                }
+            })
+        },
+        //强化物品
+        strength(uuid){
+            characterStrength(uuid).then((res) => {
+                if(res.data.res.successFlag){
+                    this.$toast.open({
+                        message: '强化成功',
+                        type: 'is-success'
+                    })
+                    this.humanModel = res.data.res.humanModel;
+                }else {
+                    this.$toast.open({
+                        message: '强化失败',
+                        type: 'is-danger'
+                    })
+                }
+            }).catch((e) => {
+                console.log(e);
+            })
+        },
+        //装备物品
+        equip(uuid){
+            characterEquip(uuid).then((res) => {
+                console.log(res);
+                if(res.data.code != 0){
+                    this.$toast.open({
+                        message: res.data.res,
+                        type: 'is-danger'
+                    })
+                }else{
+                    this.humanModel = res.data.res;
+                    this.$toast.open({
+                        message: '装备成功',
+                        type: 'is-success'
+                    })
+                }
+            }).catch((e) => {
+  
+            })
+        },
+        //切换tab
+        changeTab(tabName){
+            if(tabName == this.currentTab){
+                return;
+            }
+            this.currentTab = tabName;
+        },
         attack(key){
             characterAttack(key).then((res) => {
             }).catch((e) => {     
@@ -217,12 +377,6 @@ export default {
             this.isMoving = false;
             this.websocket.close();
         }
-        // send(){
-        //     // this.websocket.send('test');
-        //     // console.log('send');
-        //     // var message = document.getElementById('text').value;
-        //     // websocket.send(message);
-        // }
     }
 }
 </script>
@@ -349,6 +503,9 @@ export default {
                 // background: ;
                 background: -webkit-linear-gradient(right,#2f2d2c, #000000);
                 opacity: 0.8;
+                &:hover {
+                    width: 70%;
+                }
                 &.active {
                     width: 80%;
                     font-size: 1.1rem;
@@ -411,6 +568,50 @@ export default {
                 position: absolute;
                 bottom: 20px;
                 right: 30px;
+                .lookaround {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    font-size: 24px;
+                    color: white;
+                    background-color: rgba(198, 157, 120, 1);
+                    border: 2px solid white;
+                    height: 80px;
+                    width: 80px;
+                    border-radius: 40px;
+                    &:hover {
+                        margin-right: -5px;
+                        // margin-top: -5px;
+                        height: 90px;
+                        width: 90px;
+                        border-radius: 50px;
+                    }
+                }
+            }
+            .keyboard-info {
+                // flex: 1;
+                margin-top: 20px;
+                float: right;
+                .key {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding:5px;
+                    // height: 60px;
+                    // width: 60px;
+                    margin-top: 10px;
+                    background: rgba(198, 157, 120, 1);
+                    border-radius: 5px;
+                    border: 3px solid white;     
+                    font-size: 18px;
+                    // line-height: 60px;
+                    text-align: center;
+                    font-weight: bold; 
+                    color: #ffffff; 
+                    // &:hover {
+                    //     font-size: 24px;
+                    // }
+                }
             }
         }
     }
@@ -440,6 +641,10 @@ export default {
                 background: #ffffff;
                 border-radius: 5px;
                 border: 3px solid orange;
+                img {
+                    height: 55px;
+                    width: 55px;
+                }
             }
         }
         .content-box {
@@ -450,6 +655,7 @@ export default {
             margin-right: 20px;
             overflow: scroll;
             padding: 10px 10px;
+            max-height: 240px;
             .content-line {
                 color: white;
                 font-size: bold;
@@ -457,29 +663,47 @@ export default {
         }
         .skill-content {
             flex: 5;
+            max-height: 240px;
             background-color: rgba(135, 84, 45, 1);
             border:2px solid white;
+            padding: 10px 10px;
             border-radius: 20px;
             margin-right: 20px;
-        }
-        .keyboard-info {
-            // flex: 1;
-            float: right;
-            .key {
-                height: 60px;
-                width: 60px;
-                margin-top: 10px;
-                background: rgba(198, 157, 120, 1);
-                border-radius: 5px;
-                border: 3px solid white;     
-                font-size: 30px;
-                line-height: 60px;
-                text-align: center;
-                font-weight: bold; 
-                color: #ffffff; 
-                &:hover {
-                    font-size: 38px;
+            color: white;
+            font-size: bold;
+            overflow: scroll;
+            .object-list {
+                display:flex;
+                flex-wrap: wrap;
+                .object-item {
+                    height: 50px;
+                    width: 50px;
+                    border-radius: 5px;
+                    background-color: #2f2d2c;
+                    margin-right: 5px;
+                    img {
+                        height: 50px;
+                        width: 50px;
+                    }
+                    &.opacity {
+                        opacity: 0.5;
+                    }
                 }
+            }
+            .skill-list {
+                .skill-item {
+                    label {
+                        font-weight: bold;
+                    }
+                    span {
+                        margin-right: 10px;
+                    }
+                }
+            }
+        }
+        .equipment-handle {
+            .equip {
+                margin-top:30px;
             }
         }
     }

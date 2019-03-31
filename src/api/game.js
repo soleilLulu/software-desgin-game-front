@@ -1,5 +1,6 @@
 import {API_PREFIX} from './_prefix.js';
 const axios = require('axios');
+// axios.defaults.withCredentials = true
 
 /** move方法 */
 export const characterMove = () => {
@@ -19,4 +20,25 @@ export const characterCreate = (userId,humanType) => {
  */
 export const characterAttack = (key) => {
     return axios.post(`${API_PREFIX}/game/attack?key=${key}`);
+}
+
+/**
+ * eqip方法
+ *  */
+export const characterEquip = (uuid) => {
+    return axios.post(`${API_PREFIX}/game/equipment/${uuid}/equip`);
+}
+
+/**
+ * 分解装备方法
+ */
+export const characterSplit = (uuid) => {
+    return axios.post(`${API_PREFIX}/game/equipment/${uuid}/split`)
+}
+
+/**
+ *  强化装备方法
+ */
+export const characterStrength = (uuid) => {
+    return axios.post(`${API_PREFIX}/game/equipment/${uuid}/strength`)
 }
