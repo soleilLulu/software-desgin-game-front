@@ -72,7 +72,7 @@
                     探索
                 </div>
                 <!-- <a class="lookaround">开始探索</a> -->
-                <a class="button is-info" @click="stopMoving">关闭webSocket连接</a>
+                <!-- <a class="button is-info" @click="stopMoving">关闭webSocket连接</a> -->
             </div>
         </div>
     </div>
